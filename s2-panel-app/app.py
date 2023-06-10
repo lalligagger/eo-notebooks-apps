@@ -10,7 +10,7 @@ from rasterio.session import AWSSession
 
 from modules.constants import S2_BAND_COMB, S2_SPINDICES
 from modules.image_plots import (
-    plot_s2_band_comb,
+    # plot_s2_band_comb,
     plot_s2_spindex,
     plot_true_color_image,
 )
@@ -45,16 +45,17 @@ def create_s2_dashboard():
         payload = json.loads(f.read())
         query = payload["features"]
         items = pystac.ItemCollection(query)
-    # Read the data
+
+    # Read the data TODO: move this to plot functions, so we only load the needed band(s)
     # s2_data = xr.open_dataarray("data/s2_data.nc", decode_coords="all")
     aws_session = AWSSession(requester_pays=True)
     with rio.Env(aws_session):
-        print("loading data")
+        print("loading items/ delayed data")
         s2_data = stac_load(
             items,
             bands=["red", "green", "blue", "nir", "nir08", "swir16", "swir22"],
-            resolution=250,
-            chunks={'x': 2048, 'y': 2048},
+            resolution=500,
+            chunks={'time':1, 'x': 2048, 'y': 2048},
             # crs='EPSG:4326',
             ).to_stacked_array(new_dim='band', sample_dims=('time', 'x', 'y'))
     
@@ -63,17 +64,15 @@ def create_s2_dashboard():
     # Time variable
     time_var = list(s2_data.indexes["time"])
     time_date = [t.date() for t in time_var]
-    # print(time_date)
 
     # Time Select
     time_opts = dict(zip(time_date, time_date))
-    # print(time_opts)
     time_select = pn.widgets.Select(name="Time", options=time_opts)
 
-    # Sentinel-2 Band Combinations Select
-    s2_band_comb_select = pn.widgets.Select(
-        name="Sentinel-2 Band combinations", options=S2_BAND_COMB
-    )
+    # # Sentinel-2 Band Combinations Select
+    # s2_band_comb_select = pn.widgets.Select(
+    #     name="Sentinel-2 Band combinations", options=S2_BAND_COMB
+    # )
 
     # Sentinel-2 spectral indices ToogleGroup
     tg_title = pn.widgets.StaticText(name="", value="Sentinel-2 spectral indices")
@@ -88,30 +87,35 @@ def create_s2_dashboard():
     show_hist_bt = pn.widgets.Button(name="Create Histogram", icon="chart-histogram")
     show_hist_bt.on_click(plot_s2_spindex_hist)
 
+    # Resolution slider
+    res_select = pn.widgets.IntSlider(name="Slider", start=50, end=2500, step=50, value=250)
+
     # Mask clouds Switch
     clm_title = pn.widgets.StaticText(name="", value="Mask clouds?")
     clm_switch = pn.widgets.Switch(name="Switch")
 
-    # Bind image plots and widgets to the selectors
-    s2_band_comb_text_bind = pn.bind(
-        get_band_comb_text,
-        band_comb=s2_band_comb_select,
-    )
+    # # Bind image plots and widgets to the selectors
+    # s2_band_comb_text_bind = pn.bind(
+    #     get_band_comb_text,
+    #     band_comb=s2_band_comb_select,
+    # )
 
     s2_true_color_bind = pn.bind(
         plot_true_color_image,
         in_data=s2_data,
         time=time_select,
         mask_clouds=clm_switch,
+        # resolution=res_select
     )
 
-    s2_band_comb_bind = pn.bind(
-        plot_s2_band_comb,
-        in_data=s2_data,
-        time=time_select,
-        band_comb=s2_band_comb_select,
-        mask_clouds=clm_switch,
-    )
+    # s2_band_comb_bind = pn.bind(
+    #     plot_s2_band_comb,
+    #     in_data=s2_data,
+    #     time=time_select,
+    #     band_comb=s2_band_comb_select,
+    #     mask_clouds=clm_switch,
+    #     resolution=res_select
+    # )
 
     s2_spindex_bind = pn.bind(
         plot_s2_spindex,
@@ -119,6 +123,7 @@ def create_s2_dashboard():
         time=time_select,
         s2_spindex=s2_spindices_tg,
         mask_clouds=clm_switch,
+        # resolution=res_select
     )
 
     # Use the Swipe tool to compare the spectral index with the true color image
@@ -138,10 +143,11 @@ def create_s2_dashboard():
         main=[main_layout],
         sidebar=[
             time_select,
-            s2_band_comb_select,
+            # s2_band_comb_select,
             tg_title,
             s2_spindices_tg,
             clm_title,
+            res_select,
             clm_switch,
         ],
     )
