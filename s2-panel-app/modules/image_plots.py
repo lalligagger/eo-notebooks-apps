@@ -47,17 +47,16 @@ def plot_true_color_image(in_data, time, mask_clouds):
                 tool.zoom_on_axis = False
                 break
 
-    # Get the selected image and band combination
     print(f"loading data & generating RGB plot for {str(time)}")
 
-    # out_data = in_data.sel(band=["B04", "B03", "B02"], time=time)
+    # Get the selected image and band combination
+    # TODO: add stac_load here
     out_data = in_data.sel(band=[("red",), ("green",), ("blue",)], time=slice(time, time + datetime.timedelta(days=1)))#.median('time')
-    #concatenate along time dimension & compute mean
+
+    # spatial merge
     out_data = merge_arrays(
         dataarrays=[out_data.sel(time=d).transpose('band', 'y', 'x') for d in out_data.coords['time'].values]
         )
-    # out_data = xr.concat(out_data, dim='time', data_vars='all').mean('time')
-    # out_data = out_data.resample(time="24H").mean()
 
     # Convert the image to uint8
     out_data.data = s2_image_to_uint8(out_data.data)
@@ -112,86 +111,6 @@ def plot_true_color_image(in_data, time, mask_clouds):
 
     return the_plot#*tiles
 
-
-# def plot_s2_band_comb(in_data, time, band_comb, mask_clouds):
-#     """
-#     A function that plots the selected band combination.
-#     """
-
-#     def hook(plot, element):
-#         """
-#         Custom hook for disabling x/y tick lines/labels
-#         """
-#         plot.state.xaxis.major_tick_line_color = None
-#         plot.state.xaxis.minor_tick_line_color = None
-#         plot.state.xaxis.major_label_text_font_size = "0pt"
-#         plot.state.yaxis.major_tick_line_color = None
-#         plot.state.yaxis.minor_tick_line_color = None
-#         plot.state.yaxis.major_label_text_font_size = "0pt"
-
-#         # Disable zoom on axis
-#         for tool in plot.state.toolbar.tools:
-#             if isinstance(tool, WheelZoomTool):
-#                 tool.zoom_on_axis = False
-#                 break
-
-#     # Get the selected image and band combination
-#     out_data = in_data.sel(band=band_comb, time=slice(time, time + datetime.timedelta(days=1)))#.median('time')
-#     out_data = merge_arrays(
-#         dataarrays=[out_data.sel(time=d).transpose('band', 'y', 'x') for d in out_data.coords['time'].values]
-#         )
-#     # Convert the image to uint8
-#     out_data.data = s2_image_to_uint8(out_data.data)
-
-#     # Contrast stretching
-#     out_data.data = s2_contrast_stretch(out_data.data)
-
-#     # Check whether to apply a mask to the image
-#     if mask_clouds:
-#         # Assign a value of 255 to the pixels representing clouds
-#         out_data = out_data.where(out_data.mask == 0, 255)
-
-#     # Image bands to be plotted
-#     b0 = out_data.sel(band=band_comb[0]).data
-#     b1 = out_data.sel(band=band_comb[1]).data
-#     b2 = out_data.sel(band=band_comb[2]).data
-
-#     # Create masked arrays
-#     b0_mask = np.ma.masked_where(b0 == 255, b0)
-#     b1_mask = np.ma.masked_where(b1 == 255, b1)
-#     b2_mask = np.ma.masked_where(b2 == 255, b2)
-
-#     # Plot the image
-#     plot_data = dict(
-#         x=out_data["x"],
-#         y=out_data["y"],
-#         r=b0_mask,
-#         g=b1_mask,
-#         b=b2_mask,
-#     )
-#     # normalize bounds
-#     y0 = out_data["y"].min()
-#     y1 = out_data["y"].max()
-#     dy = y1 - y0
-#     x0 = out_data["x"].min()
-#     x1 = out_data["x"].max()
-#     dx = x1 - x0
-
-#     the_plot = hv.RGB(
-#         data=plot_data,
-#         kdims=["x", "y"],
-#         vdims=list("rgb"),
-#     ).opts(
-#         xlabel="",
-#         ylabel="",
-#         hooks=[hook],
-#         frame_width=500,
-#         frame_height=int(500*dy/dx),
-#     )
-
-#     return the_plot
-
-
 def assign_spindex_to_cache(s2_spindex_name, spindex):
     """
     This function assign the spectral index array to the panel state cache
@@ -223,16 +142,18 @@ def plot_s2_spindex(in_data, time, s2_spindex, mask_clouds):
                 tool.zoom_on_axis = False
                 break
 
-    # Get the selected image
+    # Get the name of the selected spectral index
+    s2_spindex_name = s2_spindex["name"]
     print(f"loading data & generating {s2_spindex['name']} plot for {str(time)}")
 
-    # out_data = in_data.sel(time=time)
+    # Get the selected image and band combination
+    # TODO: add stac_load here
     out_data = in_data.sel(time=slice(time, time + datetime.timedelta(days=1)))#.median('time')
+
+    # spatial merge
     out_data = merge_arrays(
         dataarrays=[out_data.sel(time=d).transpose('band', 'y', 'x') for d in out_data.coords['time'].values]
         )
-    # Get the name of the selected spectral index
-    s2_spindex_name = s2_spindex["name"]
 
     # Define a custom Hover tool for the image
     spindex_hover = HoverTool(
