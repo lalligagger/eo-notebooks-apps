@@ -47,21 +47,6 @@ def create_s2_dashboard():
         query = payload["features"]
         items = pystac.ItemCollection(query)
 
-    # Read the data TODO: move this to plot functions, so we only load the needed band(s)
-    # s2_data = xr.open_dataarray("data/s2_data.nc", decode_coords="all")
-    # aws_session = AWSSession(requester_pays=True)
-    # with rio.Env(aws_session):
-    #     print("loading items/ delayed data")
-    #     s2_data = stac_load(
-    #         items,
-    #         bands=["red", "green", "blue", "nir", "nir08", "swir16", "swir22"],
-    #         resolution=500,
-    #         chunks={'time':1, 'x': 2048, 'y': 2048},
-    #         # crs='EPSG:4326',
-    #         ).to_stacked_array(new_dim='band', sample_dims=('time', 'x', 'y'))
-    
-    # s2_data = s2_data.astype("int16")
-
     # Time variable
     time_var = [i.datetime for i in items]
     time_date = [t.date() for t in time_var]
