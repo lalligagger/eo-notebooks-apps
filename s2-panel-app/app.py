@@ -69,12 +69,8 @@ def create_s2_dashboard():
     time_opts = dict(zip(time_date, time_date))
     time_select = pn.widgets.Select(name="Time", options=time_opts)
 
-    # # Sentinel-2 Band Combinations Select
-    # s2_band_comb_select = pn.widgets.Select(
-    #     name="Sentinel-2 Band combinations", options=S2_BAND_COMB
-    # )
-
-    # Sentinel-2 spectral indices ToogleGroup
+    # Sentinel-2 spectral indices ToogleGroup 
+    # TODO: Switch to AutocompleteInput validated by spyndex names
     tg_title = pn.widgets.StaticText(name="", value="Sentinel-2 spectral indices")
     s2_spindices_tg = pn.widgets.ToggleGroup(
         name="Sentinel-2 indices",
@@ -84,6 +80,7 @@ def create_s2_dashboard():
     )
 
     # Create histogram button
+    # TODO: Fix hist functionality
     show_hist_bt = pn.widgets.Button(name="Create Histogram", icon="chart-histogram")
     show_hist_bt.on_click(plot_s2_spindex_hist)
 
@@ -94,32 +91,19 @@ def create_s2_dashboard():
     clm_title = pn.widgets.StaticText(name="", value="Mask clouds?")
     clm_switch = pn.widgets.Switch(name="Switch")
 
-    # # Bind image plots and widgets to the selectors
-    # s2_band_comb_text_bind = pn.bind(
-    #     get_band_comb_text,
-    #     band_comb=s2_band_comb_select,
-    # )
-
+    # TODO: could these be merged into a single function that returns the slider plot?
+    # (Would solve current lag of spindex showing after RGB)
     s2_true_color_bind = pn.bind(
         plot_true_color_image,
-        in_data=s2_data,
+        in_data=s2_data, # TODO: remove? (stac_load to plot_true_color_image func)
         time=time_select,
         mask_clouds=clm_switch,
         # resolution=res_select
     )
 
-    # s2_band_comb_bind = pn.bind(
-    #     plot_s2_band_comb,
-    #     in_data=s2_data,
-    #     time=time_select,
-    #     band_comb=s2_band_comb_select,
-    #     mask_clouds=clm_switch,
-    #     resolution=res_select
-    # )
-
     s2_spindex_bind = pn.bind(
         plot_s2_spindex,
-        in_data=s2_data,
+        in_data=s2_data, # TODO: remove? (stac_load to plot_s2_spindex func)
         time=time_select,
         s2_spindex=s2_spindices_tg,
         mask_clouds=clm_switch,
@@ -143,7 +127,6 @@ def create_s2_dashboard():
         main=[main_layout],
         sidebar=[
             time_select,
-            # s2_band_comb_select,
             tg_title,
             s2_spindices_tg,
             clm_title,
