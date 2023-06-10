@@ -85,16 +85,25 @@ def plot_true_color_image(in_data, time, mask_clouds):
         b=b2_mask,
     )
 
+    # normalize bounds
+    y0 = out_data["y"].min()
+    y1 = out_data["y"].max()
+    dy = y1 - y0
+    x0 = out_data["x"].min()
+    x1 = out_data["x"].max()
+    dx = x1 - x0
+
     the_plot = hv.RGB(
         data=plot_data,
         kdims=["x", "y"],
+        # bounds=(x0,y0,x1,y1),
         vdims=list("rgb"),
     ).opts(
         xlabel="",
         ylabel="",
         hooks=[hook],
         frame_width=500,
-        frame_height=500,
+        frame_height=int(500*dy/dx),
     )
 
     return the_plot
@@ -156,6 +165,13 @@ def plot_s2_band_comb(in_data, time, band_comb, mask_clouds):
         g=b1_mask,
         b=b2_mask,
     )
+    # normalize bounds
+    y0 = out_data["y"].min()
+    y1 = out_data["y"].max()
+    dy = y1 - y0
+    x0 = out_data["x"].min()
+    x1 = out_data["x"].max()
+    dx = x1 - x0
 
     the_plot = hv.RGB(
         data=plot_data,
@@ -166,7 +182,7 @@ def plot_s2_band_comb(in_data, time, band_comb, mask_clouds):
         ylabel="",
         hooks=[hook],
         frame_width=500,
-        frame_height=500,
+        frame_height=int(500*dy/dx),
     )
 
     return the_plot
@@ -242,6 +258,15 @@ def plot_s2_spindex(in_data, time, s2_spindex, mask_clouds):
     # Enable the refresh button of the histogram plot
     enable_hist_refresh_bt()
 
+    # normalize bounds
+    y0 = out_data["y"].min()
+    y1 = out_data["y"].max()
+    dy = y1 - y0
+    x0 = out_data["x"].min()
+    x1 = out_data["x"].max()
+    dx = x1 - x0
+    print(int(500*dy/dx))
+    
     # Plot the computed spectral index
     the_plot = hv.Image((out_data["x"], out_data["y"], plot_data_mask)).opts(
         xlabel="",
@@ -250,7 +275,7 @@ def plot_s2_spindex(in_data, time, s2_spindex, mask_clouds):
         hooks=[hook],
         tools=[spindex_hover],
         frame_width=500,
-        frame_height=500,
+        frame_height=int(500*dy/dx),
     )
 
     return the_plot

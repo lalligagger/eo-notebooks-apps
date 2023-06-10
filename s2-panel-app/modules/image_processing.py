@@ -22,10 +22,10 @@ def s2_contrast_stretch(in_data):
     Image enhancement: Contrast stretching.
     """
 
-    # p2, p98 = np.percentile(in_data, (2.5, 97.5))
-    # out_data = exposure.rescale_intensity(in_data, in_range=(p2, p98))
-    # print(f"scaling to range {p2} : {p98}")
+    p2, p98 = np.percentile(in_data.ravel(), (2.5, 97.5))
+    out_data = exposure.rescale_intensity(in_data, in_range=(p2, p98))
+    print(f"scaling to range {p2} : {p98}")
 
-    out_data = exposure.rescale_intensity(in_data, in_range=(0, 75))
+    # out_data = exposure.rescale_intensity(in_data, in_range=(0, 75))
 
     return out_data

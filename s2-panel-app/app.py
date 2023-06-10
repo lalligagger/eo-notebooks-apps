@@ -53,7 +53,7 @@ def create_s2_dashboard():
         s2_data = stac_load(
             items,
             bands=["red", "green", "blue", "nir", "nir08", "swir16", "swir22"],
-            resolution=50,
+            resolution=250,
             chunks={'x': 2048, 'y': 2048},
             # crs='EPSG:4326',
             ).to_stacked_array(new_dim='band', sample_dims=('time', 'x', 'y'))
