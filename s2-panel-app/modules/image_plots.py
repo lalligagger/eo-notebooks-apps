@@ -1,3 +1,4 @@
+import datetime
 import holoviews as hv
 import numpy as np
 import panel as pn
@@ -44,7 +45,7 @@ def plot_true_color_image(in_data, time, mask_clouds):
 
     # Get the selected image and band combination
     # out_data = in_data.sel(band=["B04", "B03", "B02"], time=time)
-    out_data = in_data.sel(band=[("red",), ("green",), ("blue",)], time=time)
+    out_data = in_data.sel(band=[("red",), ("green",), ("blue",)], time=slice(time, time + datetime.timedelta(days=1))).median('time')
 
     # Convert the image to uint8
     out_data.data = s2_image_to_uint8(out_data.data)
@@ -114,7 +115,7 @@ def plot_s2_band_comb(in_data, time, band_comb, mask_clouds):
                 break
 
     # Get the selected image and band combination
-    out_data = in_data.sel(band=band_comb, time=time)
+    out_data = in_data.sel(band=band_comb, time=slice(time, time + datetime.timedelta(days=1))).median('time')
 
     # Convert the image to uint8
     out_data.data = s2_image_to_uint8(out_data.data)
@@ -196,8 +197,8 @@ def plot_s2_spindex(in_data, time, s2_spindex, mask_clouds):
 
     # TODO: Get the selected date(time) from widget, then get *all* images with a time on that date
     # Then, perform a spatial merge.
-    out_data = in_data.sel(time=time)
-    # out_data = in_data.sel(time=slice(map_mgr.allow_dates[0], map_mgr.allow_dates[1]))
+    # out_data = in_data.sel(time=time)
+    out_data = in_data.sel(time=slice(time, time + datetime.timedelta(days=1))).median('time')
 
     # Get the name of the selected spectral index
     s2_spindex_name = s2_spindex["name"]

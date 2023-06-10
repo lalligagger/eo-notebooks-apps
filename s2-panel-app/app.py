@@ -54,6 +54,7 @@ def create_s2_dashboard():
             items[:6],
             bands=["red", "green", "blue", "nir", "nir08", "swir16", "swir22"],
             resolution=2000,
+            # chunks={'x': 2048, 'y': 2048},
             # crs='EPSG:4326',
             ).to_stacked_array(new_dim='band', sample_dims=('time', 'x', 'y'))
     
@@ -64,7 +65,7 @@ def create_s2_dashboard():
     time_date = [t.date() for t in time_var]
     print(time_date)
     # Time Select
-    time_opts = dict(zip(time_date, time_var))
+    time_opts = dict(zip(time_date, time_date))
     print(time_opts)
     time_select = pn.widgets.Select(name="Time", options=time_opts)
 
