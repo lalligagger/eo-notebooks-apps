@@ -14,8 +14,9 @@ from modules.image_plots import (
 )
 from modules.image_statistics import HIST_PLACEHOLDER, plot_s2_spindex_hist
 
-# Load the floatpanel extension
+# Load the floatpanel & terminal extension
 pn.extension("floatpanel")
+pn.extension('terminal')
 
 # Disable webgl: https://github.com/holoviz/panel/issues/4855
 hv.renderer("bokeh").webgl = False
@@ -96,6 +97,12 @@ def create_s2_dashboard():
     # Use the Swipe tool to compare the spectral index with the true color image
     spindex_truecolor_swipe = pn.Swipe(s2_true_color_bind, s2_spindex_bind)
 
+    # TODO: Keep chat in separate module. This is just for layout testing.
+
+    text_input = pn.widgets.TextAreaInput()
+    submit_button = pn.widgets.Button(button_type="primary", icon="robot")
+    terminal = pn.widgets.Terminal(height=250)
+
     # Create the main layout
     main_layout = pn.Row(
         pn.Column(HIST_PLACEHOLDER, spindex_truecolor_swipe, show_hist_bt),
@@ -114,7 +121,23 @@ def create_s2_dashboard():
             # clm_title,
             # clm_switch,
         ],
+        modal=[
+            pn.Column(
+            pn.Row(text_input, submit_button),
+            terminal
+            )
+            ]
     )
+    # Create a button
+    modal_btn = pn.widgets.Button(name="Click for modal")
+
+    # Callback that will open the modal when the button is clicked
+    def about_callback(event):
+        s2_dash.open_modal()
+
+    # Link the button to the callback and append it to the sidebar
+    modal_btn.on_click(about_callback)
+    s2_dash.sidebar.insert(0, modal_btn)
 
     return s2_dash
 
