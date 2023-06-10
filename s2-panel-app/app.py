@@ -5,8 +5,6 @@ import json
 from odc.stac import stac_load
 import pystac
 from pystac_client.client import Client
-# import rasterio as rio
-# from rasterio.session import AWSSession
 
 from modules.constants import S2_BAND_COMB, S2_SPINDICES
 from modules.image_plots import (
@@ -24,19 +22,6 @@ hv.renderer("bokeh").webgl = False
 
 client = Client.open('https://earth-search.aws.element84.com/v1/')
 
-def get_band_comb_text(band_comb):
-    """
-    A function that return a StaticText showing
-    the selected band combination.
-    """
-
-    band_comb_text = pn.widgets.StaticText(
-        name="Band Combination", value=", ".join(str(band_comb))
-    )
-
-    return band_comb_text
-
-
 def create_s2_dashboard():
     """
     This function creates the main dashboard
@@ -53,17 +38,25 @@ def create_s2_dashboard():
 
     # Time Select
     time_opts = dict(zip(time_date, time_date))
-    time_select = pn.widgets.Select(name="Time", options=time_opts)
+    time_select = pn.widgets.DatePicker(
+        name="Date",
+        value=time_date[0], 
+        start=time_date[-1], 
+        end=time_date[0], 
+        enabled_dates=time_date,
+        description="Select the date for plotting."
+        )
 
     # Sentinel-2 spectral indices ToogleGroup 
-    # TODO: Switch to AutocompleteInput validated by spyndex names
-    tg_title = pn.widgets.StaticText(name="", value="Sentinel-2 spectral indices")
-    s2_spindices_tg = pn.widgets.ToggleGroup(
-        name="Sentinel-2 indices",
-        widget_type="button",
-        behavior="radio",
-        options=S2_SPINDICES,
-    )
+    # TODO: Switch AutocompleteInput values/ spectral index calc to spyndex
+
+    s2_spindices_ac = pn.widgets.AutocompleteInput(
+        name='Spectral Index', 
+        restrict=True,
+        options=list(S2_SPINDICES.keys()),
+        value='NDVI',
+        description="Select the [index](https://davemlz-espectro-espectro-91350i.streamlit.app/) for overlay plot."
+        )
 
     # Create histogram button
     # TODO: Fix hist functionality
@@ -71,7 +64,10 @@ def create_s2_dashboard():
     show_hist_bt.on_click(plot_s2_spindex_hist)
 
     # Resolution slider
-    res_select = pn.widgets.IntSlider(name="Slider", start=50, end=2500, step=50, value=250)
+    res_select = pn.widgets.IntInput(
+        name="Resolution", 
+        start=50, end=2500, step=50, value=250,
+        description="Select the display resolution in meters.")
 
     # Mask clouds Switch
     clm_title = pn.widgets.StaticText(name="", value="Mask clouds?")
@@ -92,7 +88,7 @@ def create_s2_dashboard():
         plot_s2_spindex,
         items=items,
         time=time_select,
-        s2_spindex=s2_spindices_tg,
+        s2_spindex=s2_spindices_ac,
         mask_clouds=clm_switch,
         resolution=res_select
     )
@@ -102,7 +98,6 @@ def create_s2_dashboard():
 
     # Create the main layout
     main_layout = pn.Row(
-        # pn.Column(s2_band_comb_bind, s2_band_comb_text_bind),
         pn.Column(HIST_PLACEHOLDER, spindex_truecolor_swipe, show_hist_bt),
     )
 
@@ -114,11 +109,10 @@ def create_s2_dashboard():
         main=[main_layout],
         sidebar=[
             time_select,
-            tg_title,
-            s2_spindices_tg,
+            s2_spindices_ac,
             res_select,
-            clm_title,
-            clm_switch,
+            # clm_title,
+            # clm_switch,
         ],
     )
 

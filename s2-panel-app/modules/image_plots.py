@@ -1,6 +1,5 @@
 import datetime
 import holoviews as hv
-# from holoviews import opts
 import numpy as np
 import panel as pn
 from bokeh.models import CustomJSHover, HoverTool, WheelZoomTool
@@ -12,6 +11,8 @@ import xarray as xr
 import rasterio as rio
 from rioxarray.merge import merge_arrays
 from rasterio.session import AWSSession
+
+from modules.constants import S2_SPINDICES
 
 # This function hide the tooltip when the pixel value is NaN
 HIDE_NAN_HOVTOOL = CustomJSHover(
@@ -164,6 +165,7 @@ def plot_s2_spindex(items, time, s2_spindex, mask_clouds, resolution):
                 break
 
     # Get the name of the selected spectral index
+    s2_spindex = S2_SPINDICES[s2_spindex]
     s2_spindex_name = s2_spindex["name"]
     print(f"loading data & generating {s2_spindex['name']} plot for {str(time)}")
 
@@ -176,8 +178,7 @@ def plot_s2_spindex(items, time, s2_spindex, mask_clouds, resolution):
         print("loading delayed data")
         s2_data = stac_load(
             items,
-            # TODO: add logic to pull in only needed bands for selected spinxex/ spyndex
-            bands=["red", "green", "blue", "nir", "nir08", "swir16", "swir22"],
+            bands=[s2_spindex["b0"][0], s2_spindex["b1"][0]],
             resolution=resolution,
             chunks={'time':1, 'x': 2048, 'y': 2048},
             # crs='EPSG:4326',
