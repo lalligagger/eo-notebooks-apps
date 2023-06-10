@@ -6,6 +6,7 @@ from odc.stac import stac_load
 import pystac
 from pystac_client.client import Client
 
+from modules.chat_agent import component as chat_agent
 from modules.constants import S2_BAND_COMB, S2_SPINDICES
 from modules.image_plots import (
     # plot_s2_band_comb,
@@ -61,8 +62,8 @@ def create_s2_dashboard():
 
     # Create histogram button
     # TODO: Fix hist functionality
-    show_hist_bt = pn.widgets.Button(name="Create Histogram", icon="chart-histogram")
-    show_hist_bt.on_click(plot_s2_spindex_hist)
+    # show_hist_bt = pn.widgets.Button(name="Create Histogram", icon="chart-histogram")
+    # show_hist_bt.on_click(plot_s2_spindex_hist)
 
     # Resolution slider
     res_select = pn.widgets.IntInput(
@@ -95,23 +96,20 @@ def create_s2_dashboard():
     )
 
     # Use the Swipe tool to compare the spectral index with the true color image
-    spindex_truecolor_swipe = pn.Swipe(s2_true_color_bind, s2_spindex_bind)
-
-    # TODO: Keep chat in separate module. This is just for layout testing.
-
-    text_input = pn.widgets.TextAreaInput()
-    submit_button = pn.widgets.Button(button_type="primary", icon="robot")
-    terminal = pn.widgets.Terminal(height=250)
+    spindex_truecolor_swipe = pn.Swipe(
+        pn.pane.HoloViews(s2_true_color_bind, sizing_mode='stretch_both'), 
+        pn.pane.HoloViews(s2_spindex_bind, sizing_mode='stretch_both')
+        )
 
     # Create the main layout
     main_layout = pn.Row(
-        pn.Column(HIST_PLACEHOLDER, spindex_truecolor_swipe, show_hist_bt),
+        pn.Column(HIST_PLACEHOLDER, spindex_truecolor_swipe)#, show_hist_bt),
     )
 
     # Create the dashboard and turn into a deployable application
     s2_dash = pn.template.FastListTemplate(
         site="",
-        title="EO DEMO: Sentinel-2 STAC explorer",
+        title="SatGPT App Demo (STAC + LangChain + Panel)",
         theme="default",
         main=[main_layout],
         sidebar=[
@@ -121,15 +119,10 @@ def create_s2_dashboard():
             # clm_title,
             # clm_switch,
         ],
-        modal=[
-            pn.Column(
-            pn.Row(text_input, submit_button),
-            terminal
-            )
-            ]
+        modal=[chat_agent]
     )
     # Create a button
-    modal_btn = pn.widgets.Button(name="Click for modal")
+    modal_btn = pn.widgets.Button(name="Start New Search...", icon='satellite')
 
     # Callback that will open the modal when the button is clicked
     def about_callback(event):
