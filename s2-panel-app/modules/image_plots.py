@@ -6,8 +6,12 @@ import panel as pn
 from bokeh.models import CustomJSHover, HoverTool, WheelZoomTool
 from modules.image_processing import s2_contrast_stretch, s2_image_to_uint8
 from modules.image_statistics import enable_hist_refresh_bt
+
+from odc.stac import stac_load
 import xarray as xr
+import rasterio as rio
 from rioxarray.merge import merge_arrays
+from rasterio.session import AWSSession
 
 # This function hide the tooltip when the pixel value is NaN
 HIDE_NAN_HOVTOOL = CustomJSHover(
@@ -25,7 +29,7 @@ HIDE_NAN_HOVTOOL = CustomJSHover(
 
 # tiles = hv.Tiles('https://tile.openstreetmap.org/{Z}/{X}/{Y}.png', name="OSM")#.opts(width=600, height=550)
 
-def plot_true_color_image(in_data, time, mask_clouds):
+def plot_true_color_image(items, time, mask_clouds, resolution):
     """
     A function that plots the True Color band combination.
     """
@@ -47,11 +51,28 @@ def plot_true_color_image(in_data, time, mask_clouds):
                 tool.zoom_on_axis = False
                 break
 
-    print(f"loading data & generating RGB plot for {str(time)}")
 
+    print(f"loading data & generating RGB plot for {str(time)}")
+    #TODO: add time downselection
+
+    mask = [i.datetime.date() == time for i in items]
+    items = [b for a, b in zip(mask, items) if a]
+
+    aws_session = AWSSession(requester_pays=True)
+    with rio.Env(aws_session):
+        print("loading delayed data")
+        s2_data = stac_load(
+            items,
+            bands=["red", "green", "blue"],#, "nir", "nir08", "swir16", "swir22"],
+            resolution=resolution,
+            chunks={'time':1, 'x': 2048, 'y': 2048},
+            # crs='EPSG:4326',
+            ).to_stacked_array(new_dim='band', sample_dims=('time', 'x', 'y'))
+    
+    s2_data = s2_data.astype("int16")
     # Get the selected image and band combination
     # TODO: add stac_load here
-    out_data = in_data.sel(band=[("red",), ("green",), ("blue",)], time=slice(time, time + datetime.timedelta(days=1)))#.median('time')
+    out_data = s2_data.sel(band=[("red",), ("green",), ("blue",)], time=slice(time, time + datetime.timedelta(days=1)))#.median('time')
 
     # spatial merge
     out_data = merge_arrays(
@@ -108,7 +129,7 @@ def plot_true_color_image(in_data, time, mask_clouds):
         frame_width=500,
         frame_height=int(500*dy/dx),
     )
-
+    print("finished plotting")
     return the_plot#*tiles
 
 def assign_spindex_to_cache(s2_spindex_name, spindex):
@@ -120,7 +141,7 @@ def assign_spindex_to_cache(s2_spindex_name, spindex):
 
 
 # TODO: generalize with spyndex(!)
-def plot_s2_spindex(in_data, time, s2_spindex, mask_clouds):
+def plot_s2_spindex(items, time, s2_spindex, mask_clouds, resolution):
     """
     A function that plots the selected Sentinel-2 spectral index.
     """
@@ -147,8 +168,24 @@ def plot_s2_spindex(in_data, time, s2_spindex, mask_clouds):
     print(f"loading data & generating {s2_spindex['name']} plot for {str(time)}")
 
     # Get the selected image and band combination
-    # TODO: add stac_load here
-    out_data = in_data.sel(time=slice(time, time + datetime.timedelta(days=1)))#.median('time')
+    mask = [i.datetime.date() == time for i in items]
+    items = [b for a, b in zip(mask, items) if a]
+
+    aws_session = AWSSession(requester_pays=True)
+    with rio.Env(aws_session):
+        print("loading delayed data")
+        s2_data = stac_load(
+            items,
+            # TODO: add logic to pull in only needed bands for selected spinxex/ spyndex
+            bands=["red", "green", "blue", "nir", "nir08", "swir16", "swir22"],
+            resolution=resolution,
+            chunks={'time':1, 'x': 2048, 'y': 2048},
+            # crs='EPSG:4326',
+            ).to_stacked_array(new_dim='band', sample_dims=('time', 'x', 'y'))
+    s2_data = s2_data.astype("int16")
+
+    # Get the selected image and band combination
+    out_data = s2_data.sel(time=slice(time, time + datetime.timedelta(days=1)))#.median('time')
 
     # spatial merge
     out_data = merge_arrays(
@@ -200,5 +237,5 @@ def plot_s2_spindex(in_data, time, s2_spindex, mask_clouds):
         frame_width=500,
         frame_height=int(500*dy/dx),
     )
-
+    print("finished plotting")
     return the_plot#*tiles
