@@ -43,7 +43,8 @@ def plot_true_color_image(in_data, time, mask_clouds):
                 break
 
     # Get the selected image and band combination
-    out_data = in_data.sel(band=["B04", "B03", "B02"], time=time)
+    # out_data = in_data.sel(band=["B04", "B03", "B02"], time=time)
+    out_data = in_data.sel(band=[("red",), ("green",), ("blue",)], time=time)
 
     # Convert the image to uint8
     out_data.data = s2_image_to_uint8(out_data.data)
@@ -57,9 +58,9 @@ def plot_true_color_image(in_data, time, mask_clouds):
         out_data = out_data.where(out_data.mask == 0, 255)
 
     # Image bands to be plotted
-    b0 = out_data.sel(band="B04").data
-    b1 = out_data.sel(band="B03").data
-    b2 = out_data.sel(band="B02").data
+    b0 = out_data.sel(band=("red",)).data
+    b1 = out_data.sel(band=("green",)).data
+    b2 = out_data.sel(band=("blue",)).data
 
     # Create masked arrays
     b0_mask = np.ma.masked_where(b0 == 255, b0)
@@ -191,7 +192,12 @@ def plot_s2_spindex(in_data, time, s2_spindex, mask_clouds):
                 break
 
     # Get the selected image
+    print(f"loading data for {str(time)}")
+
+    # TODO: Get the selected date(time) from widget, then get *all* images with a time on that date
+    # Then, perform a spatial merge.
     out_data = in_data.sel(time=time)
+    # out_data = in_data.sel(time=slice(map_mgr.allow_dates[0], map_mgr.allow_dates[1]))
 
     # Get the name of the selected spectral index
     s2_spindex_name = s2_spindex["name"]
@@ -203,8 +209,10 @@ def plot_s2_spindex(in_data, time, s2_spindex, mask_clouds):
     )
 
     # Calculate the selected spectral index
-    b0 = out_data.sel(band=s2_spindex["b0"]).data
-    b1 = out_data.sel(band=s2_spindex["b1"]).data
+    b0 = out_data.sel(band=s2_spindex["b0"])
+    b0 = b0.where(b0 > 0).data
+    b1 = out_data.sel(band=s2_spindex["b1"])
+    b1 = b1.where(b1 > 0).data
     plot_data = (b0 - b1) / (b0 + b1)
 
     # Check whether to apply a mask to the image

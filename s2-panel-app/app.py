@@ -1,6 +1,13 @@
 import holoviews as hv
 import panel as pn
 import xarray as xr
+import json
+from odc.stac import stac_load
+import pystac
+from pystac_client.client import Client
+import rasterio as rio
+from rasterio.session import AWSSession
+
 from modules.constants import S2_BAND_COMB, S2_SPINDICES
 from modules.image_plots import (
     plot_s2_band_comb,
@@ -15,6 +22,7 @@ pn.extension("floatpanel")
 # Disable webgl: https://github.com/holoviz/panel/issues/4855
 hv.renderer("bokeh").webgl = False
 
+client = Client.open('https://earth-search.aws.element84.com/v1/')
 
 def get_band_comb_text(band_comb):
     """
@@ -23,7 +31,7 @@ def get_band_comb_text(band_comb):
     """
 
     band_comb_text = pn.widgets.StaticText(
-        name="Band Combination", value=", ".join(band_comb)
+        name="Band Combination", value=", ".join(str(band_comb))
     )
 
     return band_comb_text
@@ -33,17 +41,31 @@ def create_s2_dashboard():
     """
     This function creates the main dashboard
     """
-
+    with open('./tmp/items.json', "r") as f:
+        payload = json.loads(f.read())
+        query = payload["features"]
+        items = pystac.ItemCollection(query)
     # Read the data
-    s2_data = xr.open_dataarray("data/s2_data.nc", decode_coords="all")
+    # s2_data = xr.open_dataarray("data/s2_data.nc", decode_coords="all")
+    aws_session = AWSSession(requester_pays=True)
+    with rio.Env(aws_session):
+        print("loading data")
+        s2_data = stac_load(
+            items[:6],
+            bands=["red", "green", "blue", "nir", "nir08", "swir16", "swir22"],
+            resolution=2000,
+            # crs='EPSG:4326',
+            ).to_stacked_array(new_dim='band', sample_dims=('time', 'x', 'y'))
+    
     s2_data = s2_data.astype("int16")
 
     # Time variable
     time_var = list(s2_data.indexes["time"])
     time_date = [t.date() for t in time_var]
-
+    print(time_date)
     # Time Select
     time_opts = dict(zip(time_date, time_var))
+    print(time_opts)
     time_select = pn.widgets.Select(name="Time", options=time_opts)
 
     # Sentinel-2 Band Combinations Select
