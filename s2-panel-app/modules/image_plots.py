@@ -5,6 +5,8 @@ import panel as pn
 from bokeh.models import CustomJSHover, HoverTool, WheelZoomTool
 from modules.image_processing import s2_contrast_stretch, s2_image_to_uint8
 from modules.image_statistics import enable_hist_refresh_bt
+import xarray as xr
+from rioxarray.merge import merge_arrays
 
 # This function hide the tooltip when the pixel value is NaN
 HIDE_NAN_HOVTOOL = CustomJSHover(
@@ -45,7 +47,13 @@ def plot_true_color_image(in_data, time, mask_clouds):
 
     # Get the selected image and band combination
     # out_data = in_data.sel(band=["B04", "B03", "B02"], time=time)
-    out_data = in_data.sel(band=[("red",), ("green",), ("blue",)], time=slice(time, time + datetime.timedelta(days=1))).median('time')
+    out_data = in_data.sel(band=[("red",), ("green",), ("blue",)], time=slice(time, time + datetime.timedelta(days=1)))#.median('time')
+    #concatenate along time dimension & compute mean
+    out_data = merge_arrays(
+        dataarrays=[out_data.sel(time=d).transpose('band', 'y', 'x') for d in out_data.coords['time'].values]
+        )
+    # out_data = xr.concat(out_data, dim='time', data_vars='all').mean('time')
+    # out_data = out_data.resample(time="24H").mean()
 
     # Convert the image to uint8
     out_data.data = s2_image_to_uint8(out_data.data)
@@ -115,8 +123,10 @@ def plot_s2_band_comb(in_data, time, band_comb, mask_clouds):
                 break
 
     # Get the selected image and band combination
-    out_data = in_data.sel(band=band_comb, time=slice(time, time + datetime.timedelta(days=1))).median('time')
-
+    out_data = in_data.sel(band=band_comb, time=slice(time, time + datetime.timedelta(days=1)))#.median('time')
+    out_data = merge_arrays(
+        dataarrays=[out_data.sel(time=d).transpose('band', 'y', 'x') for d in out_data.coords['time'].values]
+        )
     # Convert the image to uint8
     out_data.data = s2_image_to_uint8(out_data.data)
 
@@ -198,8 +208,10 @@ def plot_s2_spindex(in_data, time, s2_spindex, mask_clouds):
     # TODO: Get the selected date(time) from widget, then get *all* images with a time on that date
     # Then, perform a spatial merge.
     # out_data = in_data.sel(time=time)
-    out_data = in_data.sel(time=slice(time, time + datetime.timedelta(days=1))).median('time')
-
+    out_data = in_data.sel(time=slice(time, time + datetime.timedelta(days=1)))#.median('time')
+    out_data = merge_arrays(
+        dataarrays=[out_data.sel(time=d).transpose('band', 'y', 'x') for d in out_data.coords['time'].values]
+        )
     # Get the name of the selected spectral index
     s2_spindex_name = s2_spindex["name"]
 
