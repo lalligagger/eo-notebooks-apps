@@ -68,7 +68,7 @@ def create_s2_dashboard():
     # Resolution slider
     res_select = pn.widgets.IntInput(
         name="Resolution", 
-        start=50, end=2500, step=50, value=250,
+        start=20, end=2500, step=50, value=250,
         description="Select the display resolution in meters.")
 
     # Mask clouds Switch
@@ -109,7 +109,7 @@ def create_s2_dashboard():
     # Create the dashboard and turn into a deployable application
     s2_dash = pn.template.FastListTemplate(
         site="",
-        title="SatGPT App Demo (STAC + LangChain + Panel)",
+        title="SatGPT App Demo <font size='3'> (STAC x LangChain x Panel) </font>",
         theme="default",
         main=[main_layout],
         sidebar=[
